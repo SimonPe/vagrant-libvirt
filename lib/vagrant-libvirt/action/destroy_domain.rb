@@ -39,21 +39,12 @@ module VagrantPlugins
             env[:machine].provider_config.disks.each do |disk|
               # shared disks remove only manualy or ???
               next if disk[:allow_existing]
-              diskname = libvirt_domain.name + '-' + disk[:device] + '.' + disk[:type].to_s
+              disk[:path] ||= "#{libvirt_domain.name}-#{disk[:device]}.#{disk[:type]}"
               # diskname is uniq
               libvirt_disk = env[:libvirt_compute].volumes.all.select do |x|
-                x.name == diskname
+                x.name == disk[:path]
               end.first
-              if libvirt_disk
-                libvirt_disk.destroy
-              elsif disk[:path]
-                poolname = env[:machine].provider_config.storage_pool_name
-                libvirt_disk = env[:libvirt_compute].volumes.all.select do |x|
-                  # FIXME can remove pool/target.img and pool/123/target.img
-                  x.path =~ /\/#{disk[:path]}$/ && x.pool_name == poolname
-                end.first
-                libvirt_disk.destroy if libvirt_disk
-              end
+              libvirt_disk.destroy if libvirt_disk
             end
 
             # remove root storage
